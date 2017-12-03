@@ -1,0 +1,45 @@
+run 1-1000-1000-22:14:13
+attr experiment "CADD RP"
+attr strategy "1-1000-1000-22:14:13"
+attr measurement "NS_400_No_Turns.tcl"
+attr description "Testing Protocol: CADD"
+attr "duration" "1000"
+attr "interestPeriod" "1000"
+attr "VehicleNum" "1"
+attr "DestNum" "1"
+attr "MobilityFile" "NS_400_No_Turns.tcl"
+attr "timeStarted" "1-11 22:14:13"
+attr "TransmitionRange" "150"
+attr "CacheSize" "20"
+attr "timeFinished" "1-11 22:14:29"
+
+scalar . measurement "NS_400_No_Turns.tcl"
+scalar . "duration" "1000"
+scalar . "interestPeriod" "1000"
+scalar . "VehicleNum" "1"
+scalar . "DestNum" "1"
+scalar . "MobilityFile" "NS_400_No_Turns.tcl"
+scalar . "TransmitionRange" "150"
+scalar . "CacheSize" "20"
+scalar . Total-number-of-interests 1
+scalar . #Packets_generated_cache 0
+scalar . #Packets_generated_vehicle 0
+scalar . #Packets_Replicated 0
+scalar . #Packets_Replicated_received 0
+scalar . Total-data-received 0
+scalar . Total-data-received-vehicle 0
+scalar . Total-data-missing 0
+scalar . Total-interest-missing 1
+scalar . Elapsed-Time-count 0
+statistic . hit-ratio
+field count 16
+statistic . cache-Size
+field count 16
+field sum 0
+field mean 0
+field min 0
+field max 0
+field sqrsum 0
+field stddev 0
+
+
