@@ -470,7 +470,7 @@ Ptr<Ipv4Route> IADD::RouteOutput(Ptr<Packet> p, const Ipv4Header &header,
 	NS_LOG_FUNCTION(
 			this<< p->GetUid ()<<header.GetSource()<<header.GetDestination());
 	Ptr<Ipv4L3Protocol> l3 = m_ipv4->GetObject<Ipv4L3Protocol>();
-	NS_ASSERT(p->GetSize() < 2000);
+	//NS_ASSERT(p->GetSize() < 3000);
 
 	Ipv4InterfaceAddress iface = l3->GetAddress(1, 0);
 	if (m_socketAddresses.empty()) {
@@ -489,7 +489,8 @@ Ptr<Ipv4Route> IADD::RouteOutput(Ptr<Packet> p, const Ipv4Header &header,
 		route->SetOutputDevice(oif);
 		return route;
 	}
-
+	NS_LOG_INFO(
+				"RouteOutPut");
 	if (type == IADD_RSU || type == IADD_VEHICLE) {
 		NS_LOG_LOGIC(
 				"RSU/Vehicle sending data, send it to Routeinput using loopback");
@@ -600,6 +601,8 @@ if(p->GetUid()==48421 && getNodeId()==93 && Simulator::Now()>Seconds(730))
 	return false;
 
 }
+
+// DI : Insert data to Datacache
 bool IADD::RouteInputRSU(Ptr<const Packet> p, const Ipv4Header &header,
 		Ptr<const NetDevice> idev, UnicastForwardCallback ucb,
 		MulticastForwardCallback mcb, LocalDeliverCallback lcb,
@@ -724,10 +727,13 @@ MessageType IADD::getPacketType(Ptr<const Packet> packet) {
 	p->RemoveHeader(u);
 	IADDTypeHeader h(IADD_UNKNOWN);
 	p->RemoveHeader(h);
+
 	if (!h.isValid()) {
-		NS_LOG_WARN(
-				"Message received with unknown message type, Message Dropped\n");
-		return h.getType();
+		// DI :
+//		NS_LOG_WARN(
+//				"Message received with unknown message type, Message Dropped\n");
+//		return h.getType();
+		return IADD_DATA;
 	}
 	return h.getType();
 }
@@ -847,8 +853,8 @@ bool IADD::VehicleDataForwarding(Ptr<const Packet> p, const Ipv4Header & header,
 	//cout << "ssss" << endl;
 
 	if (neighborList.isNeighbor(header.GetDestination(),myPosition())) {
-		NS_LOG_INFO(
-				"Data "<<getPacetInfo(p)<<" , "<<header.GetDestination()<<": The dest is my Neighbor, what are you waiting for?");
+//		NS_LOG_INFO(
+//				"Data "<<getPacetInfo(p)<<" , "<<header.GetDestination()<<": The dest is my Neighbor, what are you waiting for?");
 
 		prepareRouteandSend(p, header, ucb, header.GetDestination());
 		if (fromPacketList) {
@@ -1108,6 +1114,8 @@ void IADD::setNewDestLoc(Ptr<Packet> p, double x, double y) {
 	p->AddHeader(typeH);
 	p->AddHeader(u);
 }
+
+// DI -
 bool IADD::VehicleInterestForwarding(Ptr<const Packet> p,
 		const Ipv4Header & header, UnicastForwardCallback ucb,
 		ErrorCallback ecb, bool fromPacketList, bool &packetFwd) {
@@ -1278,17 +1286,19 @@ bool IADD::RSUDataForwarding(Ptr<const Packet> p, const Ipv4Header & header,
 	NS_LOG_FUNCTION(this);
 
 	if (getPacketType(p) != IADD_DATA)
+	{   NS_LOG_INFO("--------------1"<<endl);
 		return false;
-
+	}
 	IADDInterestHeader interestH = getInterestHeader(p);
 
 	double x = interestH.getReqX();
 	double y = interestH.getReqY();
 	Vector dstLoc(x, y, 0);
 
+	// DI : the use of neighborList
 	if (neighborList.isNeighbor(header.GetDestination(),myPosition())) {
-		NS_LOG_INFO(
-				"Data "<<getPacetInfo(p)<<" , "<<header.GetDestination()<<": The dest is my Neighbor, what are you waiting for?");
+//		NS_LOG_INFO(
+//				"Data "<<getPacetInfo(p)<<" , "<<header.GetDestination()<<": The dest is my Neighbor, what are you waiting for?");
 
 		prepareRouteandSend(p, header, ucb, header.GetDestination());
 		if (fromPacketList) {
@@ -1360,7 +1370,12 @@ bool IADD::RSUInterestForwarding(Ptr<const Packet> p, const Ipv4Header & header,
 	}
 
 	Ptr<Packet> cahedPacket; // = Create<Packet>();
-	if (datacache.getPacket(interestH, cahedPacket)) {
+
+	// DI : changed the code
+	cahedPacket = p->Copy();
+	if (true) {
+	// DI : original code
+//	if (datacache.getPacket(interestH, cahedPacket)) {
 		NS_LOG_INFO(
 				"Cache hit for interest "<<p->GetUid()<<", reply with Data packet "<<cahedPacket->GetUid());
 		//hitRatio->Update(1);
@@ -1388,21 +1403,53 @@ bool IADD::RSUInterestForwarding(Ptr<const Packet> p, const Ipv4Header & header,
 		dataHeader.setInterestType(interestH.getInterestType());
 		dataHeader.setTimeGenerated(Simulator::Now());
 
+
 		dataHeader.setInterestUid(p->GetUid());
-		Ptr<Packet> newPacket = Create<Packet>();
 
-		newPacket->AddHeader(dataHeader);
-		newPacket->AddHeader(th);
-		setPacketFlags(newPacket, 1, 0, false);
-		setCachedBefore(newPacket, false);
-		//newPacket->AddHeader(u);
 
-		numberofPacketsGeneratedCache->Update();
+		NS_LOG_INFO("LOOP START");
 
-		SendTo(newPacket, header.GetSource(), IADD_APP_PORT); // send to requester
-		if (tracingEnabled)
-			tracer->dataCreated(getIpAddress(), Simulator::Now(), myPosition(),
-					p->GetUid(), newPacket->GetUid(), header.GetSource());
+		for(int i =0 ; i < 1000 ; i++)
+		{
+			Ptr<Packet> newPacket = Create<Packet>(2000);
+
+			newPacket->AddHeader(dataHeader);
+			newPacket->AddHeader(th);
+
+
+			setPacketFlags(newPacket, 1, 0, false);
+			setCachedBefore(newPacket, false);
+
+			//newPacket->AddHeader(u);
+			NS_LOG_INFO("SIZE: "<<newPacket->GetSize());
+			numberofPacketsGeneratedCache->Update();
+
+
+			SendTo(newPacket, header.GetSource(), IADD_APP_PORT); // send to requester
+		}
+
+		NS_LOG_INFO("LOOP END");
+
+		// original source code
+//		Ptr<Packet> newPacket = Create<Packet>(2000);
+//
+//		newPacket->AddHeader(dataHeader);
+//		newPacket->AddHeader(th);
+//
+//
+//		setPacketFlags(newPacket, 1, 0, false);
+//		setCachedBefore(newPacket, false);
+//
+//				//newPacket->AddHeader(u);
+//		NS_LOG_INFO("SIZE: "<<newPacket->GetSize());
+//		numberofPacketsGeneratedCache->Update();
+//
+//
+//		SendTo(newPacket, header.GetSource(), IADD_APP_PORT); // send to requester
+
+//		if (tracingEnabled)
+//			tracer->dataCreated(getIpAddress(), Simulator::Now(), myPosition(),
+//					p->GetUid(), newPacket->GetUid(), header.GetSource());
 		packetFwd = true;
 		return true;
 	}
@@ -1600,7 +1647,7 @@ void IADD::SendTo(Ptr<Socket> socket, Ptr<Packet> packet,
 void IADD::SendTo(Ptr<Packet> packet, Ipv4Address destination, uint32_t port) {
 	NS_LOG_INFO(
 			"Sending Packet: "<<packet->GetUid()<<" to "<<destination<<" on "<<port);
-	NS_ASSERT(packet->GetSize() < 3000);
+	//NS_ASSERT(packet->GetSize() < 3000);
 	Ptr<Packet> p = packet->Copy();
 	IADDTypeHeader h(IADD_UNKNOWN);
 	p->RemoveHeader(h);
@@ -1708,6 +1755,13 @@ void IADD::RecvRSUBeacon(Ptr<Packet> p, Ipv4Address src) {
 		p->RemoveHeader(header);
 		double x = header.getPositionX();
 		double y = header.getPositionY();
+
+//		if(getNodeId()==65)
+//		{
+//			NS_LOG_INFO(getNodeId() << " GetBeaconFromRSU"<<" X: "<<x<<" Y: "<<y);
+//		}
+
+		header.GetTypeId();
 		Vector rsuPosition(x, y, 0);
 		Time ttl(beaconInterval.GetInteger() * (int64_t) ALLOWED_BEACON_LOSS);
 		RSU rsu(src, rsuPosition);
@@ -2187,5 +2241,26 @@ map<Ipv4Address, uint32_t> IADD::getPendingPacketsDes() {
 void IADD::setTracer(Ptr<IADDPacketTracer> t) {
 	tracer = t;
 }
+
+//void IADD::WriteUntilBufferFull (Ptr<Socket> localSocket, uint32_t txSpace)
+//   {
+//     while (currentTxBytes < totalTxBytes && localSocket->GetTxAvailable () > 0)
+//       {
+//         uint32_t left = totalTxBytes - currentTxBytes;
+//         uint32_t dataOffset = currentTxBytes % writeSize;
+//         uint32_t toWrite = writeSize - dataOffset;
+//         toWrite = std::min (toWrite, left);
+//         toWrite = std::min (toWrite, localSocket->GetTxAvailable ());
+//         int amountSent = localSocket->Send (&data[dataOffset], toWrite, 0);
+//         if(amountSent < 0)
+//           {
+//             // we will be called again when new tx space becomes available.
+//             return;
+//      }
+//  	  	  currentTxBytes += amountSent;
+//      }
+//  	  localSocket->Close ();
+//   }
+
 }
 

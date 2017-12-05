@@ -64,6 +64,18 @@ private:
 	bool vehicleStopped;
 
 	Vector myPosition();
+//	// DI : ------------------------------------------
+//	// The number of bytes to send in this simulation.
+//	static const uint32_t totalTxBytes = 2000000;
+//	static uint32_t currentTxBytes = 0;
+//   	// Perform series of 1040 byte writes (this is a multiple of 26 since
+//	// we want to detect data splicing in the output stream)
+//	static const uint32_t writeSize = 1040;
+//	uint8_t data[writeSize];
+//
+//	void WriteUntilBufferFull (Ptr<Socket>, uint32_t);
+//	//------------------------------------------
+
 	void resetCentrality();
 	bool isCourseChanged(Vector oldV, Vector newV);
 	bool hasPassedThrough(Vector oldP, Vector newP, Vector rsuP);
